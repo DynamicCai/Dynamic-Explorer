@@ -1,0 +1,127 @@
+import numpy as np
+from numpy import pi
+from scipy.optimize import least_squares
+from dearpygui.core import *
+from dearpygui.simple import *
+heihei
+index = 0
+number = 0
+fun_cal = []
+pmin = []
+pmax = []
+
+
+def HNP_callback(sender, data): 
+    global index
+    global number
+    global fun_cal
+    global pmin
+    global pmax
+    si = get_data("stored_i")
+    panel_name="Left_Panel" + si
+    exec("global total" + si)
+    total.append(
+        f"p[{index}] / ( 1 + ( 1j * x * 10**p[{index + 1}] )**p[{index + 2}] )**p[{index + 3}] + p[{index + 4}]")
+    fun_cal.append(
+        f"res_lsq.x[{index}] / ( 1 + ( 1j * x_dat * 10**res_lsq.x[{index + 1}] )**res_lsq.x[{index + 2}] )**res_lsq.x[{index + 3}] + res_lsq.x[{index + 4}]")
+    add_text(f"HNP##{number+1}", parent=panel_name)
+    add_text("p0", parent=panel_name)
+    add_same_line(parent=panel_name)
+    add_input_float(f"input_par##{index}", default_value=2, parent=panel_name)
+    index = index + 1
+    add_text("p1", parent=panel_name)
+    add_same_line(parent=panel_name)
+    add_input_float(f"input_par##{index}", default_value=-1, parent=panel_name)
+    index = index + 1
+    add_text("p2", parent=panel_name)
+    add_same_line(parent=panel_name)
+    add_input_float(f"input_par##{index}", default_value=0.5, parent=panel_name)
+    index = index + 1
+    add_text("p3", parent=panel_name)
+    add_same_line(parent=panel_name)
+    add_input_float(f"input_par##{index}", default_value=0.5, parent=panel_name)
+    index = index + 1
+    add_text("p4", parent=panel_name)
+    add_same_line(parent=panel_name)
+    add_input_float(f"input_par##{index}", default_value=1, parent=panel_name)
+    index = index + 1
+    pmin.extend([0, -np.inf, 0, 0, 0])
+    pmax.extend([np.inf, np.inf, 1, 1, np.inf])
+    number = number + 1
+    
+
+
+def fun_final(p, x, y1, y2):
+    fx = eval("+".join(total)) - (y1 - 1j * y2)
+    result = np.concatenate((fx.real, fx.imag))
+    return result
+
+
+def fit_callback(sender, data):
+    p0 = []
+    fit = {}
+    fit2 = {}
+    fit2_list = {}
+    for i in range(index):
+        current_data = get_value(f"input_par##{i}")
+        add_data("stored_input", current_data)
+        p0.append(get_data("stored_input"))
+    p0 = np.array(p0)
+    log_debug(print(p0))
+    x_dat = np.array(get_data("stored_x"))
+    y1_dat = np.array(get_data("stored_y1"))
+    y2_dat = np.array(get_data("stored_y2"))
+    res_lsq = least_squares(fun_final, p0, bounds=(
+        pmin, pmax), args=(x_dat, y1_dat, y2_dat))
+    y_fit = eval("+".join(fun_cal))
+    y2_fit = -y_fit.imag
+    x_list = x_dat.tolist()
+    y2_list = y2_fit.tolist()
+    add_line_series("IPlot0", "fitted", x_list, y2_list)
+    for i in range(index):
+        set_value(f"input_par##{i}", res_lsq.x[i])
+    for i in range(number):
+        fit[i] = eval(fun_cal[i])
+        fit2[i] = -fit[i].imag
+        fit2_list[i] = fit2[i].tolist()
+        add_line_series("IPlot0", f"fit{i}", x_list, fit2_list[i])
+    add_data("frame_count", 0)
+    set_render_callback(dynamic_callback)
+
+
+def dynamic_callback(sender, data):
+    # keeping track of frames
+    frame_count = get_data("frame_count")
+    frame_count += 1
+    add_data("frame_count", frame_count)
+
+    # updating plot data and plotting new data
+    delete_series("Original_Data")
+    datax_list = get_data("stored_x")
+
+    p = []
+    for i in range(index):
+        input_data = get_value(f"input_par##{i}")
+        p.append(input_data)
+
+    for i in range(number):
+        fit[i] = eval(fun_cal[i])
+        fit2[i] = -fit[i].imag
+        fit2_list[i] = fit2[i].tolist()
+        add_line_series("IPlot0", f"fit{i}", x_list, fit2_list[i])
+
+
+def remove_functions(sender, data):
+    clear_plot("Iplot0")
+    for i in range(index):
+        delete_series(f"fit{i}")
+        delete_item(f"input_par##{index}")
+        delete_item(f"p{i}")
+    for i in range(number):
+        delete_item(f"HNP##{number+1}")
+    index = 0
+    number = 0
+    pmin = []
+    pmax = []
+    total = []
+    fun_cal = []
