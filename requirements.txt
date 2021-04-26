@@ -1,0 +1,7 @@
+\dielectric dog     #项目文件夹
+d----- application  # 项目的应用文件夹
+d----- data         # 项目的数据文件夹
+d----- utils        # 项目的工具文件夹
+-a---- config.ini   # 项目的配置文件
+-a---- main.py      # 项目的启动方法
+-a---- requirements.txt

@@ -1,0 +1,54 @@
+class SmartTable:
+
+    def __init__(self, name: str, header: List[str] = None):
+        self.name = name
+        self.header = header
+        self.column = 0
+        self.row = 0
+
+        if header is not None:
+            self.add_header(self.header)
+
+    def add_header(self, header: List[str]):
+        add_separator(parent="fitdata")
+        with managed_columns(f"{self.name}_head", len(header)):
+            for parameters in header:
+                add_text(parameters, parent="fitdata")
+    
+    def add_row(self, row_content: List[Any]):
+        with managed_columns(f"{self.name}_{self.row}", len(row_content)):
+            for item in row_content:
+                add_input_float(f"##{self.name}_{self.row}_{self.column}", parent="fitdata")
+                self.column += 1
+        self.column = 0
+        add_separator(parent="fitdata")
+
+    def get_cell_data(self, col: int) -> Any:
+        return get_value(f"##{self.name}_{col}")
+
+class FitFunctions:
+    def __init__(self, functions):
+        self.functions = functions
+    
+    def plus_function(self, functions):
+        functions.append(self)
+
+    def sum_up_function(self, functions: List[str]):
+        total_functions = []
+        for item in functions:
+            total_functions.append(item)
+            total_functions.append(" + ")
+        return total_functions
+
+    def HNP_bounds(self):
+        lower_bounds = [0, -np.inf, 0, 0, 0]
+        upper_bounds = [np.inf, np.inf, 1, 1, np.inf]
+        return lower_bounds, upper_bounds
+
+    def HNP_callback(self, sender, data):
+        show_HNP_table = SmartTable("HNP")
+        add_checkbox(f"{show_HNP_table.name}", parent = "fitdata")
+        show_HNP_table.add_header(["p0", "p1", "p2", "p3", "p4"])
+        add_separator(parent="fitdata")
+        show_HNP_table.add_row(["1", "0", "0.5", "0.5", "2"])
+        
